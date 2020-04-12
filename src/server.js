@@ -1,11 +1,16 @@
 import React from 'react';
-import { renderToString } from 'react-dom/server';
+import { renderToString, renderToStaticMarkup } from 'react-dom/server';
 import express from 'express';
 import { StaticRouter } from 'react-router-dom';
 import { resolve } from 'path';
 import fs from 'fs';
+import { createStore, applyMiddleware } from 'redux';
+import { Provider } from 'react-redux';
+import thunk from 'redux-thunk';
+import rootReducer from './store';
 
 import App from './App';
+import PreloadContext from './lib/PreloadContext';
 
 const app = express();
 
@@ -18,7 +23,7 @@ const chunks = Object.keys(manifest.files)
   .map(name => `<script src="${manifest.files[name]}"></script>`)
   .join('');
 
-const createHtml = root => `
+const createHtml = (root, initialState) => `
   <!DOCTYPE html>
   <html lang="ko">
   <head>
@@ -34,6 +39,7 @@ const createHtml = root => `
   <body>
       <noscript>You need to enable JavaScript to run this app.</noscript>
       <div id="root">${root}</div>
+      ${initialState}
       <script src="${manifest.files['runtime-main.js']}"></script>
       ${chunks}
       <script src="${manifest.files['main.js']}"></script>
@@ -47,16 +53,38 @@ app.use(express.static(resolve('./build'), {
 
 app.use(async (req, res, next) => {
   const context = {};
+  const store = createStore(rootReducer, applyMiddleware(thunk));
+
+  const preloadContext = {
+    done: false,
+    promises: [],
+  };
 
   const jsx = (
-    <StaticRouter location={req.url} context={context}>
-      <App/>
-    </StaticRouter>
+    <PreloadContext.Provider value={preloadContext}>
+      <Provider store={store}>
+        <StaticRouter location={req.url} context={context}>
+          <App/>
+        </StaticRouter>
+      </Provider>
+    </PreloadContext.Provider>
   );
+  renderToStaticMarkup(jsx);
 
+  try {
+    await Promise.all(preloadContext.promises);
+  } catch (e) {
+    return res.status(500);
+  }
+
+  preloadContext.done = true;
   res.set('content-type', 'text/html');
   const root = renderToString(jsx);
-  res.send(createHtml(root));
+
+  const stateString = JSON.stringify(store.getState()).replace(/</g, '\\u003c');
+  const initialState = `<script>__INITIAL_STATE__ = ${stateString}</script>`;
+
+  res.send(createHtml(root, initialState));
 });
 
 const port = process.env.PORT || 3030;
