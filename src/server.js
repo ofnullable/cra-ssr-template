@@ -6,8 +6,8 @@ import { resolve } from 'path';
 import fs from 'fs';
 import { createStore, applyMiddleware } from 'redux';
 import { Provider } from 'react-redux';
-import thunk from 'redux-thunk';
-import rootReducer from './store';
+import createSagaMiddleware, { END } from 'redux-saga';
+import rootReducer, { rootSaga } from './store';
 
 import App from './App';
 import PreloadContext from './lib/PreloadContext';
@@ -53,7 +53,10 @@ app.use(express.static(resolve('./build'), {
 
 app.use(async (req, res, next) => {
   const context = {};
-  const store = createStore(rootReducer, applyMiddleware(thunk));
+  const sagaMiddleware = createSagaMiddleware();
+  const store = createStore(rootReducer, applyMiddleware(sagaMiddleware));
+
+  const sagaPromise = sagaMiddleware.run(rootSaga).toPromise();
 
   const preloadContext = {
     done: false,
@@ -71,7 +74,10 @@ app.use(async (req, res, next) => {
   );
   renderToStaticMarkup(jsx);
 
+  store.dispatch(END);
+
   try {
+    await sagaPromise;
     await Promise.all(preloadContext.promises);
   } catch (e) {
     return res.status(500);

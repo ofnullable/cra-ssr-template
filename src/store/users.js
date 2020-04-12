@@ -1,22 +1,51 @@
 import axios from 'axios';
+import { all, fork, call, put, takeLatest } from 'redux-saga/effects';
 
 const LOAD_USERS_REQUEST = 'users/LOAD_USERS_REQUEST';
 const LOAD_USERS_SUCCESS = 'users/LOAD_USERS_SUCCESS';
 const LOAD_USERS_FAILURE = 'users/LOAD_USERS_FAILURE';
 
-const loadUsersRequest = () => ({ type: LOAD_USERS_REQUEST });
+const LOAD_USER_REQUEST = 'users/LOAD_USER_REQUEST';
+const LOAD_USER_SUCCESS = 'users/LOAD_USER_SUCCESS';
+const LOAD_USER_FAILURE = 'users/LOAD_USER_FAILURE';
+
+export const loadUsersRequest = () => ({ type: LOAD_USERS_REQUEST });
 const loadUsersSuccess = (data) => ({ type: LOAD_USERS_SUCCESS, data });
 const loadUsersFailure = (error) => ({ type: LOAD_USERS_FAILURE, error });
 
-export const loadUsers = () => async (dispatch) => {
-  dispatch(loadUsersRequest());
+export const loadUserRequest = (id) => ({ type: LOAD_USER_REQUEST, id });
+const loadUserSuccess = (data) => ({ type: LOAD_USER_SUCCESS, data });
+const loadUserFailure = (error) => ({ type: LOAD_USER_FAILURE, error });
+
+const loadUsersApi = () => axios.get(`https://jsonplaceholder.typicode.com/users`);
+
+function* loadUsers() {
   try {
-    const users = await axios.get('https://jsonplaceholder.typicode.com/users');
-    dispatch(loadUsersSuccess(users.data));
+    const { data } = yield call(loadUsersApi);
+    yield put(loadUsersSuccess(data));
   } catch (e) {
-    dispatch(loadUsersFailure(e));
+    yield put(loadUsersFailure(e));
   }
-};
+}
+
+function* watchLoadUsers() {
+  yield takeLatest(LOAD_USERS_REQUEST, loadUsers);
+}
+
+const loadUserApi = (id) => axios.get(`https://jsonplaceholder.typicode.com/users/${id}`);
+
+function* loadUser({ id }) {
+  try {
+    const { data } = yield call(loadUserApi, id);
+    yield put(loadUserSuccess(data));
+  } catch (e) {
+    yield put(loadUserFailure(e));
+  }
+}
+
+function* watchLoadUser() {
+  yield takeLatest(LOAD_USER_REQUEST, loadUser);
+}
 
 const initialState = {
   users: {
@@ -30,6 +59,10 @@ const initialState = {
     error: null,
   },
 };
+
+export function* usersSaga() {
+  yield all([fork(watchLoadUsers), fork(watchLoadUser)]);
+}
 
 export default (state = initialState, action) => {
   switch (action.type) {
@@ -56,6 +89,33 @@ export default (state = initialState, action) => {
         ...state,
         users: {
           ...state.users,
+          error: action.error,
+          loading: false,
+        },
+      };
+    case LOAD_USER_REQUEST:
+      return {
+        ...state,
+        user: {
+          data: {},
+          loading: true,
+          error: null,
+        },
+      };
+    case LOAD_USER_SUCCESS:
+      return {
+        ...state,
+        user: {
+          ...state.user,
+          data: action.data,
+          loading: false,
+        },
+      };
+    case LOAD_USER_FAILURE:
+      return {
+        ...state,
+        user: {
+          ...state.user,
           error: action.error,
           loading: false,
         },
