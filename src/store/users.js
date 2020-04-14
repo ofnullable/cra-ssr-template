@@ -47,6 +47,10 @@ function* watchLoadUser() {
   yield takeLatest(LOAD_USER_REQUEST, loadUser);
 }
 
+export function* usersSaga() {
+  yield all([fork(watchLoadUsers), fork(watchLoadUser)]);
+}
+
 const initialState = {
   users: {
     data: [],
@@ -60,10 +64,6 @@ const initialState = {
   },
 };
 
-export function* usersSaga() {
-  yield all([fork(watchLoadUsers), fork(watchLoadUser)]);
-}
-
 export default (state = initialState, action) => {
   switch (action.type) {
     case LOAD_USERS_REQUEST:
@@ -76,6 +76,7 @@ export default (state = initialState, action) => {
         },
       };
     case LOAD_USERS_SUCCESS:
+      console.log(action);
       return {
         ...state,
         users: {

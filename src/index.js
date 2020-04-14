@@ -11,12 +11,16 @@ import rootReducer, { rootSaga } from './store';
 
 const sagaMiddleware = createSagaMiddleware();
 
+const preloadedState = window.__PRELOADED_STATE__;
+
+delete window.__PRELOADED_STATE__;
+
 const store = createStore(
   rootReducer,
-  window.__INITIAL_STATE__,
-  applyMiddleware(sagaMiddleware)
+  preloadedState,
+  applyMiddleware(sagaMiddleware),
 );
-sagaMiddleware.run(rootSaga)
+sagaMiddleware.run(rootSaga);
 
 ReactDOM.render(
   <Provider store={store}>

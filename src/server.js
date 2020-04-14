@@ -72,8 +72,8 @@ app.use(async (req, res, next) => {
       </Provider>
     </PreloadContext.Provider>
   );
-  renderToStaticMarkup(jsx);
 
+  renderToStaticMarkup(jsx);
   store.dispatch(END);
 
   try {
@@ -88,9 +88,9 @@ app.use(async (req, res, next) => {
   const root = renderToString(jsx);
 
   const stateString = JSON.stringify(store.getState()).replace(/</g, '\\u003c');
-  const initialState = `<script>__INITIAL_STATE__ = ${stateString}</script>`;
+  const preloadState = `<script>__PRELOADED_STATE__ = ${stateString}</script>`;
 
-  res.send(createHtml(root, initialState));
+  res.send(createHtml(root, preloadState));
 });
 
 const port = process.env.PORT || 3030;
