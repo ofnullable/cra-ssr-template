@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import Users from '../components/Users';
 import { usePreloader } from '../lib/PreloadContext';
-import { loadUsersRequest } from '../store/users';
+import { loadUsersRequest } from '../store/actions/users';
 
 const UsersContainer = () => {
   const { data, loading } = useSelector(state => state.users.users);

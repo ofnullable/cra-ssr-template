@@ -10,5 +10,5 @@ export const usePreloader = (resolve) => {
   if (!preloadContext) return null;
   if (preloadContext.done) return null;
 
-  preloadContext.promises.push(Promise.resolve(resolve));
+  preloadContext.promises.push(Promise.resolve(resolve()));
 };
