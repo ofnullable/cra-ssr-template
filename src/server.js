@@ -4,10 +4,9 @@ import express from 'express';
 import { StaticRouter } from 'react-router-dom';
 import { resolve } from 'path';
 import fs from 'fs';
-import { createStore, applyMiddleware } from 'redux';
 import { Provider } from 'react-redux';
-import createSagaMiddleware, { END } from 'redux-saga';
-import rootReducer, { rootSaga } from './store';
+import { END } from 'redux-saga';
+import configureStore from './store';
 
 import App from './App';
 import PreloadContext from './lib/PreloadContext';
@@ -53,10 +52,7 @@ app.use(express.static(resolve('./build'), {
 
 app.use(async (req, res, next) => {
   const context = {};
-  const sagaMiddleware = createSagaMiddleware();
-  const store = createStore(rootReducer, applyMiddleware(sagaMiddleware));
-
-  const sagaPromise = sagaMiddleware.run(rootSaga).toPromise();
+  const { store, sagaPromise } = configureStore({}, { isServer: true });
 
   const preloadContext = {
     done: false,

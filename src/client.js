@@ -4,23 +4,13 @@ import './index.css';
 import App from './App';
 import * as serviceWorker from './serviceWorker';
 import { BrowserRouter } from 'react-router-dom';
-import { createStore, applyMiddleware } from 'redux';
 import { Provider } from 'react-redux';
-import createSagaMiddleware from 'redux-saga';
-import rootReducer, { rootSaga } from './store';
-
-const sagaMiddleware = createSagaMiddleware();
+import configureStore from './store';
 
 const preloadedState = window.__PRELOADED_STATE__;
-
 delete window.__PRELOADED_STATE__;
 
-const store = createStore(
-  rootReducer,
-  preloadedState,
-  applyMiddleware(sagaMiddleware),
-);
-sagaMiddleware.run(rootSaga);
+const { store } = configureStore(preloadedState, {});
 
 ReactDOM.render(
   <Provider store={store}>
