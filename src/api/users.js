@@ -1,5 +1,5 @@
-import axios from 'axios';
+import api from './config';
 
-export const loadUsersApi = () => axios.get(`https://jsonplaceholder.typicode.com/users`);
+export const loadUsersApi = () => api.get(`/users`);
 
-export const loadUserApi = (id) => axios.get(`https://jsonplaceholder.typicode.com/users/${id}`);
+export const loadUserApi = (id) => api.get(`/users/${id}`);
