@@ -1,22 +1,20 @@
 import React, { useEffect } from 'react';
-import {useSelector, useDispatch} from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import Users from '../components/Users';
-import { PreLoader } from '../lib/PreloadContext';
-import { loadUsersRequest } from '../store/users';
+import { loadUsersRequest } from '../store/actions/users';
 
 const UsersContainer = () => {
-  const users = useSelector(state => state.users.users.data)
+  const { data, loading } = useSelector(state => state.users.users);
   const dispatch = useDispatch();
 
   useEffect(() => {
-    if (users.length) return;
-    dispatch(loadUsersRequest())
-  }, []);
+    if (loading || data.length) return;
+    dispatch(loadUsersRequest());
+  }, [loading, data, data.length]);
 
-  if (!users.length) {
-    return <PreLoader resolve={() => dispatch(loadUsersRequest())}/>
-  }
-  return <Users users={users}/>;
+  if (loading) return <p>Loading...</p>;
+
+  return <Users users={data} />;
 };
 
 export default UsersContainer;
