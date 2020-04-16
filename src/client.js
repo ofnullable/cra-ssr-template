@@ -1,5 +1,5 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
+import { render } from 'react-dom';
 import './index.css';
 import App from './App';
 import * as serviceWorker from './serviceWorker';
@@ -9,17 +9,18 @@ import configureStore from './store';
 
 const preloadedState = window.__PRELOADED_STATE__;
 delete window.__PRELOADED_STATE__;
+document.getElementById('preload-state').remove();
 
 const { store } = configureStore(preloadedState, {});
 
-ReactDOM.render(
-  <Provider store={store}>
-    <BrowserRouter>
-      <React.StrictMode>
-        <App/>
-      </React.StrictMode>
-    </BrowserRouter>
-  </Provider>,
+render(
+  <React.StrictMode>
+    <Provider store={store}>
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    </Provider>
+  </React.StrictMode>,
   document.getElementById('root'),
 );
 
@@ -27,3 +28,4 @@ ReactDOM.render(
 // unregister() to register() below. Note this comes with some pitfalls.
 // Learn more about service workers: https://bit.ly/CRA-PWA
 serviceWorker.unregister();
+

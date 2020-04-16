@@ -15,13 +15,12 @@ export default function configureStore(preloadState, { isServer }) {
 
   const store = createStore(reducers, preloadState, enhancer);
 
-  let sagaPromise;
+  let sagaPromises;
   if (isServer) {
-    sagaPromise = sagaMiddleware.run(sagas).toPromise();
+    sagaPromises = sagaMiddleware.run(sagas).toPromise();
   } else {
     sagaMiddleware.run(sagas);
   }
 
-
-  return { store, sagaPromise };
+  return { store, sagaPromises };
 }

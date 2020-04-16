@@ -1,5 +1,5 @@
 import React from 'react';
-import { renderToString, renderToStaticMarkup } from 'react-dom/server';
+import { renderToStaticMarkup, renderToString } from 'react-dom/server';
 import express from 'express';
 import { StaticRouter } from 'react-router-dom';
 import { resolve } from 'path';
@@ -9,7 +9,7 @@ import { END } from 'redux-saga';
 import configureStore from './store';
 
 import App from './App';
-import PreloadContext from './lib/PreloadContext';
+import { matchRoutes, routes } from './routes';
 
 const app = express();
 
@@ -33,7 +33,7 @@ const createHtml = (root, initialState) => `
       <meta name="description" content="Web site created using create-react-app"/>
       <link rel="apple-touch-icon" href="/logo192.png"/>
       <link rel="stylesheet" href="${manifest.files['main.css']}"/>
-      <title>React App</title>
+      <title>React SSR Template</title>
   </head>
   <body>
       <noscript>You need to enable JavaScript to run this app.</noscript>
@@ -52,39 +52,40 @@ app.use(express.static(resolve('./build'), {
 
 app.use(async (req, res, next) => {
   const context = {};
-  const { store, sagaPromise } = configureStore({}, { isServer: true });
+  const { store, sagaPromises } = configureStore({}, { isServer: true });
 
-  const preloadContext = {
-    done: false,
-    promises: [],
-  };
+
+  const promises = matchRoutes(routes, req.path)
+    .map(({ route, match }) => (
+      route.component.loadData ?
+        route.component.loadData({ store, params: match.params }) : Promise.resolve(null)
+    ));
 
   const jsx = (
-    <PreloadContext.Provider value={preloadContext}>
+    <React.StrictMode>
       <Provider store={store}>
         <StaticRouter location={req.url} context={context}>
-          <App/>
+          <App />
         </StaticRouter>
       </Provider>
-    </PreloadContext.Provider>
+    </React.StrictMode>
   );
 
   renderToStaticMarkup(jsx);
   store.dispatch(END);
 
   try {
-    await sagaPromise;
-    await Promise.all(preloadContext.promises);
+    await sagaPromises;
+    await Promise.all(promises);
   } catch (e) {
-    return res.status(500);
+    return res.status(500).end();
   }
 
-  preloadContext.done = true;
   res.set('content-type', 'text/html');
   const root = renderToString(jsx);
 
   const stateString = JSON.stringify(store.getState()).replace(/</g, '\\u003c');
-  const preloadState = `<script>__PRELOADED_STATE__ = ${stateString}</script>`;
+  const preloadState = `<script id="preload-state">__PRELOADED_STATE__ = ${stateString}</script>`;
 
   res.send(createHtml(root, preloadState));
 });

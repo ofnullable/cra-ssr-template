@@ -25,7 +25,6 @@ export default (state = initialState, action) => {
         },
       };
     case AT.LOAD_USERS_SUCCESS:
-      console.log(action);
       return {
         ...state,
         users: {
